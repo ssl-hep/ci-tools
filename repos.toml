@@ -1,0 +1,10 @@
+[test1]
+branch = "develop"
+label = "develop1"
+tagtype = "calver"
+
+[test2]
+branch = "release"
+label = "release1"
+tagtype = "semver"
+semver = "1.2.4rc2"
