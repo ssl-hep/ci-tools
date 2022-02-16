@@ -1,10 +1,12 @@
+# example of toml config for tagging repos
+# each repo should have a separate section
 [test1]
-branch = "develop"
-label = "develop1"
-tagtype = "calver"
+branch = "develop" # branch to tag
+label = "develop1" # label to add to tag e.g. 20220216-1307-develop1
+tagtype = "calver" # use calendar versioning YYYYMMDD-HHMM
 
 [test2]
 branch = "release"
 label = "release1"
-tagtype = "semver"
-semver = "1.2.4rc2"
+tagtype = "semver" # use semantic versioning
+semver = "1.2.4rc2" # version tag to use
