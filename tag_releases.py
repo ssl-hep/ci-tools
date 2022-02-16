@@ -6,7 +6,6 @@ import time
 from dataclasses import dataclass
 
 import requests
-import rich
 from rich.console import Console
 from rich.table import Table
 from rich.progress import track
@@ -84,7 +83,8 @@ def generate_calver(date: time.struct_time = None) -> str:
     target_date = date
   else:
     target_date = time.localtime()
-  return f"{target_date.tm_year:04}{target_date.tm_mon:02}{target_date.tm_mday:02}-{target_date.tm_hour:02}{target_date.tm_min:02}"
+  return f"{target_date.tm_year:04}{target_date.tm_mon:02}{target_date.tm_mday:02}-" \
+         f"{target_date.tm_hour:02}{target_date.tm_min:02}"
 
 
 def generate_tag(repo: RepoInfo) -> str:
@@ -174,10 +174,11 @@ def generate_repo_tags(repo_configs: list[RepoInfo]) -> list[RepoInfo]:
   return new_configs
 
 
-def tag_repos(repo_configs: list[RepoInfo], github_token = None) -> None:
+def tag_repos(repo_configs: list[RepoInfo], github_token: str = None) -> None:
   """
   Tag repos with specified tags
   :param repo_configs: list of repo configurations
+  :param github_token: github token for authentication
   :return:  None
   """
   check_repos(repo_configs, github_token)
@@ -198,7 +199,7 @@ def tag_repo(repo_config: RepoInfo, github_token: str = None) -> bool:
   :return: None
   """
 
-  if not github_token or not github_token.startswith('ghp') :
+  if not github_token or not github_token.startswith('ghp'):
     error("Must provide a valid github token for authentication", quit=False)
     print(github_token)
     return False
@@ -256,7 +257,7 @@ def entry(config: str) -> None:
   else:
     error(f"Config file {config} not present\n")
   if not check_repos(repo_configs, token):
-    error(f"Can't verify that all repos and branches exist")
+    error("Can't verify that all repos and branches exist")
   tag_repos(repo_configs, token)
   sys.exit(0)
 
