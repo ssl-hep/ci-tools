@@ -1,0 +1,15 @@
+[tag1]
+repos = "repo1,repo2" # repos to retag
+label = "stable" # label to add to tag e.g. 20220216-1307-develop1
+tagtype = "calver" # use calendar versioning YYYYMMDD-HHMM
+
+[tag2]
+repos = "repo3,repo4"
+label = "release1"
+tagtype = "semver" # use semantic versioning
+semver = "1.2.4rc2" # version tag to use
+
+[tag3]
+repos = "repo5" # repos to retag
+label = "develop" # label to add to tag e.g. 20220216-1307-develop1
+tagtype = "calver" # use calendar versioning YYYYMMDD-HHMM

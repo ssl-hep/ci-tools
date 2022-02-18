@@ -3,8 +3,9 @@ import time
 
 import tag_releases
 
-VALID_TEST_FILE="tests/test.toml"
-INVALID_TEST_FILE="tests/invalid.toml"
+VALID_TEST_FILE = "tests/test-tag.toml"
+INVALID_TEST_FILE = "tests/invalid-tag.toml"
+
 
 class TestTagRelease:
     """
@@ -54,17 +55,32 @@ class TestTagRelease:
         assert(tag_releases.generate_tag(config[0]) == f"{calver}-develop1")
         assert (tag_releases.generate_tag(config[1]) == "1.2.4rc2-release1")
 
-    def test_verify_branch(self):
+    def test_update_branch_config(self):
         """
         Test functionality to verify that a repo exists with the appropriate branch
         :return: None
         """
         config = tag_releases.ingest_config(pathlib.Path(VALID_TEST_FILE))
-        assert(tag_releases.verify_branch(config[0]))
-        assert(tag_releases.verify_branch(config[1]))
+        assert(tag_releases.update_branch_config(config[0]))
+        assert(config[0].commit == "96a36e779da8f8074b8ab252c25d536a99f10645")
+        assert(tag_releases.update_branch_config(config[1]))
+        assert(config[1].commit == "8762caebb3b92955e6583b2eef5f7aaf4b277c57")
         config = tag_releases.ingest_config(pathlib.Path(INVALID_TEST_FILE))
-        assert(not tag_releases.verify_branch(config[0]))
-        assert(tag_releases.verify_branch(config[1]))
+        assert(not tag_releases.update_branch_config(config[0]))
+        assert(not config[0].commit)
+        assert(tag_releases.update_branch_config(config[1]))
+        assert(config[1].commit == "8762caebb3b92955e6583b2eef5f7aaf4b277c57")
+
+    def test_verify_commit(self):
+        """
+        Test functionality to verify that a commit exists within the repo
+        :return: None
+        """
+        config = tag_releases.ingest_config(pathlib.Path(VALID_TEST_FILE))
+        config[0].commit = "96a36e779da8f8074b8ab252c25d536a99f10645"
+        assert(tag_releases.verify_commit(config[0]))
+        config[1].commit = "deadbeef"
+        assert(not tag_releases.verify_commit(config[1]))
 
     def test_check_repos(self):
         """
