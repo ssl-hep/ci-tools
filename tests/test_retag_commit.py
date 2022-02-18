@@ -78,9 +78,8 @@ class TestTagRelease:
                                                old_tag="20220216-1237-missing", tagtype="calver")
         with pytest.raises(SystemExit):
             retag_commit.set_commit(invalid_config)
-        with pytest.raises(SystemExit):
-            invalid_config.commit = "deadbeef"
-            assert(not retag_commit.verify_commit(invalid_config))
+        invalid_config.commit = "deadbeef"
+        assert(not retag_commit.verify_commit(invalid_config))
 
     def test_check_repos(self):
         """
