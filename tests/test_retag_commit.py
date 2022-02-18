@@ -19,13 +19,16 @@ class TestTagRelease:
         Test config ingestion
         :return: None
         """
-        expected_config = [retag_commit.RepoInfo(name="repo1", label="stable", old_tag="tag1", tagtype="calver"),
-                           retag_commit.RepoInfo(name="repo2", label="stable", old_tag="tag1", tagtype="calver"),
-                           retag_commit.RepoInfo(name="repo3", label="release1", old_tag="tag2", tagtype="semver",
-                                                 new_tag="1.2.4rc2"),
-                           retag_commit.RepoInfo(name="repo4", label="release1", old_tag="tag2", tagtype="semver",
-                                                 new_tag="1.2.4rc2"),
-                           retag_commit.RepoInfo(name="repo5", label="develop", old_tag="tag3", tagtype="calver")]
+        expected_config = [retag_commit.RepoInfo(name="repo1", label="stable", old_tag="tag1",
+                                                 tagtype="calver"),
+                           retag_commit.RepoInfo(name="repo2", label="stable", old_tag="tag1",
+                                                 tagtype="calver"),
+                           retag_commit.RepoInfo(name="repo3", label="release1", old_tag="tag2",
+                                                 tagtype="semver", new_tag="1.2.4rc2"),
+                           retag_commit.RepoInfo(name="repo4", label="release1", old_tag="tag2",
+                                                 tagtype="semver", new_tag="1.2.4rc2"),
+                           retag_commit.RepoInfo(name="repo5", label="develop", old_tag="tag3",
+                                                 tagtype="calver")]
 
         config = retag_commit.ingest_config(pathlib.Path(VALID_TEST_FILE))
         assert(config == expected_config)
@@ -66,13 +69,13 @@ class TestTagRelease:
         Test functionality to verify that a commit exists within the repo
         :return: None
         """
-        valid_config = retag_commit.RepoInfo(name="test1", label="stable", old_tag="20220216-1237-develop1",
-                                             tagtype="calver")
+        valid_config = retag_commit.RepoInfo(name="test1", label="stable",
+                                             old_tag="20220216-1237-develop1", tagtype="calver")
         retag_commit.set_commit(valid_config)
         assert(valid_config.commit == "96a36e779da8f8074b8ab252c25d536a99f10645")
         assert(retag_commit.verify_commit(valid_config))
-        invalid_config = retag_commit.RepoInfo(name="test1", label="stable", old_tag="20220216-1237-missing",
-                                             tagtype="calver")
+        invalid_config = retag_commit.RepoInfo(name="test1", label="stable",
+                                               old_tag="20220216-1237-missing", tagtype="calver")
         with pytest.raises(SystemExit):
             retag_commit.set_commit(invalid_config)
         with pytest.raises(SystemExit):
@@ -84,8 +87,8 @@ class TestTagRelease:
         Test functionality to verify that a repo exists
         :return: None
         """
-        config1 = retag_commit.RepoInfo(name="test1", label="stable", old_tag="20220216-1237-develop1",
-                              tagtype="calver")
+        config1 = retag_commit.RepoInfo(name="test1", label="stable",
+                                        old_tag="20220216-1237-develop1", tagtype="calver")
         config2 = retag_commit.RepoInfo(name="test2", label="stable", old_tag="1.2.4rc2-release1",
                                         tagtype="calver")
         retag_commit.set_commit(config1)

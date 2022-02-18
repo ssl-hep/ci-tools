@@ -90,7 +90,8 @@ def ingest_config(config_file: pathlib.Path) -> list[RepoInfo]:
         error(f"Section {key} missing tagtype setting")
       if tagtype not in ['semver', 'calver']:
         error(f"In section {key}, tagtype must be 'semver' or 'calver', got {tagtype}")
-      repos.append(RepoInfo(name=repo, old_tag=key, label=label, tagtype=tagtype, new_tag=newtag, commit=commit))
+      repos.append(RepoInfo(name=repo, old_tag=key, label=label, tagtype=tagtype, new_tag=newtag,
+                            commit=commit))
   return repos
 
 
@@ -265,7 +266,8 @@ def tag_repo(repo_config: RepoInfo, github_token: str = None) -> bool:
                     data=json.dumps({"owner": "ssl-hep",
                                      "repo": repo_config.name,
                                      "tag": repo_config.new_tag,
-                                     "message": f"Retagging from {repo_config.old_tag} to {repo_config.new_tag}",
+                                     "message": f"Retagging from {repo_config.old_tag} to "
+                                                f"{repo_config.new_tag}",
                                      "object": repo_config.commit,
                                      "type": "commit"}),
                     headers={'Accept': 'application/vnd.github.v3+json',
