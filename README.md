@@ -55,6 +55,7 @@ testing and then later tagged for a stable release.
 | Option | Notes                                      |
 | ------ |--------------------------------------------|
 | --config | config file to use (default: `retag.toml`) |
+| --debug | output debugging |
 
 ### Configuration 
 
