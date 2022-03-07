@@ -107,7 +107,7 @@ def generate_calver(date: time.struct_time = None) -> str:
   if date:
     target_date = date
   else:
-    target_date = time.localtime()
+    target_date = time.gmtime()
   return f"{target_date.tm_year:04}{target_date.tm_mon:02}{target_date.tm_mday:02}-" \
          f"{target_date.tm_hour:02}{target_date.tm_min:02}"
 
