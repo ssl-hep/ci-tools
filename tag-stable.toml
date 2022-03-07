@@ -1,0 +1,36 @@
+# example of toml config for tagging repos
+# each repo should have a separate section
+[ServiceX_App]
+branch = "develop"
+label = "stable"
+tagtype = "calver" # use calendar versioning YYYYMMDD-HHMM
+
+[ServiceX_DID_Finder_Rucio]
+branch = "develop"
+label = "stable"
+tagtype = "calver" # use calendar versioning YYYYMMDD-HHMM
+
+[ServiceX_DID_Finder_CERNOpenData]
+branch = "develop"
+label = "stable"
+tagtype = "calver" # use calendar versioning YYYYMMDD-HHMM
+
+[ServiceX_Code_Generator_FuncADL_uproot]
+branch = "develop"
+label = "stable"
+tagtype = "calver" # use calendar versioning YYYYMMDD-HHMM
+
+[ServiceX_Code_Generator_FuncADL_xAOD]
+branch = "develop"
+label = "stable"
+tagtype = "calver" # use calendar versioning YYYYMMDD-HHMM
+
+[ServiceX_xAOD_CPP_transformer]
+branch = "develop"
+label = "stable"
+tagtype = "calver" # use calendar versioning YYYYMMDD-HHMM
+
+[ServiceX_Uproot_Transformer]
+branch = "develop"
+label = "stable"
+tagtype = "calver" # use calendar versioning YYYYMMDD-HHMM
