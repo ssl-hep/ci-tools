@@ -273,7 +273,15 @@ def tag_repo(repo_config: RepoInfo, github_token: str = None) -> bool:
                                      "type": "commit"}),
                     headers={'Accept': 'application/vnd.github.v3+json',
                              'Authorization': f"token {github_token}"})
+
   if r.status_code != 201:
+    if r.status_code == 404:
+      error(f"Got a 404 while creating a tag for a {repo_config.name}, check to see if you have write access "
+            f"to this repo",
+            abort=False)
+      error(f"Error while creating a tag for a {repo_config.name} "
+            f"commit: {repo_config.commit}: {r.json()}")
+
     error(f"Error while creating a tag for a {repo_config.name} "
           f"commit: {repo_config.commit}: {r.json()}")
     return False
