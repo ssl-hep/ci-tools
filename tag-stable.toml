@@ -39,3 +39,8 @@ tagtype = "calver" # use calendar versioning YYYYMMDD-HHMM
 branch = "develop"
 label = "stable"
 tagtype = "calver" # use calendar versioning YYYYMMDD-HHMM
+
+[X509_Secrets]
+branch = "develop"
+label = "stable"
+tagtype = "calver" # use calendar versioning YYYYMMDD-HHMM
