@@ -71,7 +71,7 @@ def ingest_config(config_file: pathlib.Path) -> list[RepoInfo]:
     tagtype = None
     commit = ""
     semver = ""
-    for setting in ['branch', 'label', 'tagtype', 'commit']:
+    for setting in ['branch', 'label', 'tagtype', 'commit', 'docker_repo']:
       match setting:
         case 'branch': branch = parsed[key][setting]
         case 'label': label = parsed[key][setting]
@@ -82,6 +82,7 @@ def ingest_config(config_file: pathlib.Path) -> list[RepoInfo]:
         case 'commit':
           if 'commit' in parsed[key]:
             commit = parsed[key][setting].lower()
+        case 'docker_repo': pass
         case _: warn(f"Unknown setting {setting} in section {key}")
     if branch is None:
       error(f"Section {key} missing branch setting")
