@@ -1,10 +1,5 @@
 # example of toml config for tagging repos
 # each repo should have a separate section
-[ServiceX]
-branch = "develop"
-label = "stable"
-tagtype = "calver" # use calendar versioning YYYYMMDD-HHMM
-
 [ServiceX_App]
 branch = "develop"
 label = "stable"
