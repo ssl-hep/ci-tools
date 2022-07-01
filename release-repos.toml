@@ -1,0 +1,37 @@
+# example of toml config for tagging repos
+# each repo should have a separate section
+[ServiceX]
+branch = "develop" # branch to tag
+label = "stable" # label to add to tag e.g. 20220216-1307-develop1
+tagtype = "calver" # use calendar versioning YYYYMMDD-HHMM
+
+[ServiceX_App]
+branch = "develop" # branch to tag
+label = "stable" # label to add to tag e.g. 20220216-1307-develop1
+tagtype = "calver" # use calendar versioning YYYYMMDD-HHMM
+
+[ServiceX_DID_Finder_Rucio]
+branch = "develop" # branch to tag
+label = "stable" # label to add to tag e.g. 20220216-1307-develop1
+tagtype = "calver" # use calendar versioning YYYYMMDD-HHMM
+
+[ServiceX_Code_Generator_FuncADL_uproot]
+branch = "develop" # branch to tag
+label = "stable" # label to add to tag e.g. 20220216-1307-develop1
+tagtype = "calver" # use calendar versioning YYYYMMDD-HHMM
+
+[ServiceX_xAOD_CPP_transformer]
+branch = "develop" # branch to tag
+label = "stable" # label to add to tag e.g. 20220216-1307-develop1
+tagtype = "calver" # use calendar versioning YYYYMMDD-HHMM
+
+[ServiceX_Uproot_Transformer]
+branch = "develop" # branch to tag
+label = "stable" # label to add to tag e.g. 20220216-1307-develop1
+tagtype = "calver" # use calendar versioning YYYYMMDD-HHMM
+
+[ServiceX_Code_Generator_FuncADL_xAOD]
+branch = "develop" # branch to tag
+label = "stable" # label to add to tag e.g. 20220216-1307-develop1
+tagtype = "calver" # use calendar versioning YYYYMMDD-HHMM
+
