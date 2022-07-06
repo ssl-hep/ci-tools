@@ -75,6 +75,7 @@ git tag -a v$1 -m "Helm chart version $2"
 git push origin v$1
 
 # Publish the chart
+helm dependency update servicex
 helm package servicex
 mv servicex-$2.tgz ../ssl-helm-charts
 
