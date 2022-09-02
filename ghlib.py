@@ -1,21 +1,20 @@
-# library of github related functions
+# library of GitHub related functions
 import datetime
 import json
 
 import requests
 
-from error_handling import error, warn
+from error_handling import error
 import repoinfo
 from repoinfo import RepoInfo
 
 
 def valid_gh_token(token: str = None, query: bool = True) -> bool:
   """
-  Check to make sure token might be a github token, function can't verify for sure
+  Check to make sure token might be a GitHub token, function can't verify for sure
   that a token is valid, just that it is not valid
-
   :param token: string with token
-  :param query: query github to really valid
+  :param query: query GitHub to really valid
   :return: false if token is not valid, true if it might be
   """
   if token and token.startswith('ghp'):
@@ -32,9 +31,9 @@ def valid_gh_token(token: str = None, query: bool = True) -> bool:
 
 def get(url: str, token: str = None) -> requests.Response:
   """
-  Send a GET request to github
+  Send a GET request to GitHub
   :param url: url to GET
-  :param token: github personal access token
+  :param token: GitHub personal access token
   :return: results from request
   """
   get_headers = {'Accept': 'application/vnd.github.v3+json'}
@@ -45,10 +44,10 @@ def get(url: str, token: str = None) -> requests.Response:
 
 def post(url: str, data: dict, token: str = None) -> requests.Response:
   """
-  Send POST to github
+  Send POST to GitHub
   :param url: url to POST to
   :param data:  dictionary with body of POST request
-  :param token: github personal access token
+  :param token: GitHub personal access token
   :return: results from request
   """
   headers = {'Accept': 'application/vnd.github.v3+json'}
@@ -60,9 +59,9 @@ def post(url: str, data: dict, token: str = None) -> requests.Response:
 def verify_commit(repo_url: str, commit: str, token: str = None) -> bool:
   """
   Check and verify specified commit exists in a repository
-  :param repo_url:  Github URL to repo
+  :param repo_url: GitHub URL to repo
   :param commit: hash of commit to check
-  :param token: github token to use for authentication
+  :param token: GitHub token to use for authentication
   :return: True if branch is present
   """
   if not commit:
@@ -71,10 +70,14 @@ def verify_commit(repo_url: str, commit: str, token: str = None) -> bool:
   commit_url = f"{repo_url}/commits/{commit}"
   r = get(commit_url, token)
   match r.status_code:
-    case 404: return False
-    case 422: return False
-    case 200: return True
-    case _: error(f"Got {r.status_code} when accessing github: {commit_url}")
+    case 404:
+      return False
+    case 422:
+      return False
+    case 200:
+      return True
+    case _:
+      error(f"Got {r.status_code} when accessing github: {commit_url}")
   return False
 
 
@@ -82,7 +85,7 @@ def tag_repo(repo_config: RepoInfo, token: str = None) -> bool:
   """
   Tag a repo branch
   :param repo_config: configuration for repo
-  :param token: github token for authentication
+  :param token: GitHub token for authentication
   :return: None
   """
 
@@ -133,7 +136,6 @@ def tag_repo(repo_config: RepoInfo, token: str = None) -> bool:
 def get_repo_workflow_by_tag(repo_config: RepoInfo, tag: str, token: str = None) -> list[str]:
   """
   Get a list of workflows to monitor for a given tag and repo
-
   :param repo_config: repo configurations
   :param tag: string with tag to monitor
   :param token: github token
@@ -164,7 +166,6 @@ def get_repo_workflow_by_tag(repo_config: RepoInfo, tag: str, token: str = None)
 def get_repo_workflow_by_time(repo_config: RepoInfo, time: datetime.datetime, token: str = None) -> list[str]:
   """
   Get a list of workflows to monitor for a given tag and repo
-
   :param repo_config: repo configurations
   :param time: approximate time of workflow creation
   :param token: github token
@@ -173,10 +174,9 @@ def get_repo_workflow_by_time(repo_config: RepoInfo, time: datetime.datetime, to
 
   workflow_start = time - datetime.timedelta(minutes=5)
   workflow_stop = time + datetime.timedelta(minutes=5)
-  time_format = "%Y-%m-%dT%H:%M:%Sz"
   workflow_url = repoinfo.generate_repo_url(repo_config) + \
-                 f"/actions/runs/?created={workflow_start.strftime(time_format)}.." \
-                 f"{workflow_stop.strftime(time_format)}"
+                 f"/actions/runs/?created={workflow_start.isoformat()}.." \
+                 f"{workflow_stop.isoformat()}"
   r = get(workflow_url, token)
   resp = r.json()
   match r.status_code:
@@ -198,8 +198,7 @@ def get_repo_workflow_by_time(repo_config: RepoInfo, time: datetime.datetime, to
 
 def get_workflow_status(workflow_url: str, token: str) -> dict[str, str]:
   """
-  Query github for the status of a given workflow\
-
+  Query GitHub for the status of a given workflow\
   :param workflow_url: json from querying actions/runs for a given repo
   :param token: github token
   :return: dict with status of workflow
@@ -232,8 +231,7 @@ def get_workflow_status(workflow_url: str, token: str) -> dict[str, str]:
 
 def workflows_complete(workflow_info: dict[str, list[str]], token: str) -> bool:
   """
-  Query github for the status of a given workflow\
-
+  Query GitHub for the status of a given workflow\
   :param workflow_info: dictionary with workflow information
   :param token: github token
   :return: True if all workflows completed
@@ -245,9 +243,10 @@ def workflows_complete(workflow_info: dict[str, list[str]], token: str) -> bool:
       match r.status_code:
         case 200:
           resp = r.json()
-          if resp['conclusion'] is not None:
-            completed &= True
+          if resp['conclusion'] not in ['success', 'completed', 'cancelled', 'failure',
+                                        'action_required', 'timed_out', 'skipped']:
+            completed = False
         case _:
+          print(f"workflow: {workflow_url} default not completed")
           completed = False
   return completed
-

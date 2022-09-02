@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 import datetime
-import json
+import os
+import shutil
 import sys
 import pathlib
 import logging
+import tempfile
 import typing
 import time
 
@@ -12,15 +14,17 @@ import requests
 import rich
 import rich.align
 
-
 from rich.console import Console
+from rich.text import Text
 from rich.table import Table
 from rich.progress import track
 from rich.logging import RichHandler
 from rich.live import Live
+from rich.layout import Layout
 
 
 import ghlib
+import git
 import repoinfo
 import util
 from error_handling import error, warn
@@ -29,15 +33,15 @@ from repoinfo import RepoInfo
 
 def get_token() -> str:
   """
-  Prompt user for github token and do a quick verification
-  :return: str with github token
+  Prompt user for GitHub token and do a quick verification
+  :return: str with GitHub token
   """
   token = input("Enter your github token (PAT):")
   if not ghlib.valid_gh_token(token):
     warn("Token seems to be invalid")
     resp = input("Continue [y/N]? ")
     if resp.lower().strip() != 'y':
-      return ""
+      error("Exiting due to missing github PAT")
   return token
 
 
@@ -65,7 +69,9 @@ def get_confirmation(tagged_repos: list[RepoInfo]) -> bool:
   table.add_column("URL")
   table.add_column("Tag")
   for repo in tagged_repos:
-    table.add_row(repo.name, repoinfo.generate_repo_url(repo), repo.tag)
+    table.add_row(repo.name,
+                  Text(repoinfo.generate_repo_url(repo), style=f"link {repoinfo.generate_repo_url(repo)}"),
+                  repo.tag)
   console.print(table)
   console.print("Apply tags (y/N)? ")
   resp = input().lower()
@@ -80,7 +86,7 @@ def update_branch_config(repo_config: RepoInfo, github_token: str = None) -> boo
   Check and verify a branch exists in a repository, if it exists update
   config to include the last commit made on the branch
   :param repo_config:  repo config
-  :param github_token: github token to use for authentication
+  :param github_token: GitHub token to use for authentication
   :return: True if branch is present
   """
   if not repo_config.branch:
@@ -104,7 +110,7 @@ def verify_commit(repo_config: RepoInfo, github_token: str = None) -> bool:
   """
   Check and verify specified commit exists in a repository
   :param repo_config:  repo config
-  :param github_token: github token to use for authentication
+  :param github_token: GitHub token to use for authentication
   :return: True if branch is present
   """
   if not repo_config.commit:
@@ -117,7 +123,7 @@ def check_repos(repo_configs: list[RepoInfo], github_token: str = None) -> bool:
   """
   Check a list of repos to verify that information provided is accurate
   :param repo_configs: list of RepoInfo to check
-  :param github_token: github token to use for authentication
+  :param github_token: GitHub token to use for authentication
   :return: None
   """
   for repo in repo_configs:
@@ -140,11 +146,11 @@ def generate_repo_tags(repo_configs: list[RepoInfo]) -> list[RepoInfo]:
   return new_configs
 
 
-def tag_repos(repo_configs: list[RepoInfo], github_token: str = None) -> None:
+def tag_repos(repo_configs: list[RepoInfo], github_token: str = None) -> str:
   """
   Tag repos with specified tags
   :param repo_configs: list of repo configurations
-  :param github_token: github token for authentication
+  :param github_token: GitHub token for authentication
   :return:  None
   """
   check_repos(repo_configs, github_token)
@@ -152,9 +158,12 @@ def tag_repos(repo_configs: list[RepoInfo], github_token: str = None) -> None:
   if not get_confirmation(tagged_configs):
     error("Tagging operation was not confirmed", abort=True)
   Console().print("Starting tagging operations:")
+  tag = ""
   for repo in track(tagged_configs, description="Tagging.."):
+    tag = repo.tag
     if not ghlib.tag_repo(repo, github_token):
       error(f"Can't tag {repo.name}")
+  return tag
 
 
 @click.command(help="Verify that workflows for given tags have completed successfully")
@@ -162,20 +171,25 @@ def tag_repos(repo_configs: list[RepoInfo], github_token: str = None) -> None:
 @click.option("workflow_time", '--time', type=str, default="",
               help="Check for workflows started within 5 minutes of specified time (YYYY-MM-DDTHH:MM:SS)")
 @click.pass_obj
-def monitor_workflows(config: dict[str, typing.Any], tag: str, workflow_time: str) -> None:
+@click.pass_context
+def monitor_workflows(ctx: click.Context, config: dict[str, typing.Any], tag: str, workflow_time: str) -> None:
   """
   Verify that workflows for given tags have completed successfully
-
+  :param ctx: click.Context with information about invocation
   :param config: dictionary with option information
   :param tag: tag to use when finding workflows to monitor
   :param workflow_time: ISO8601 time (YYYY-MM-DDTHH:MM:SS) giving the approximate time for monitored workflows
   """
-  token = get_token()
+  if 'token' not in ctx.obj:
+    token = get_token()
+    ctx.obj['token'] = token
+  else:
+    token = ctx.obj['token']
   if not ghlib.valid_gh_token(token):
     error("Must provide a valid github token for authentication to get workflow information")
 
-  if workflow_time != "":
-    workflow_datetime = datetime.datetime.strptime("%Y-%m-%dT%H:%M:%S", workflow_time)
+  if workflow_time != "" and not isinstance(workflow_time, datetime.datetime):
+    workflow_datetime = datetime.datetime.fromisoformat(workflow_time)
   if tag == "" and workflow_time == "":
     resp = input("Get workflows started around the current time? [Y/n]")
     if resp.lower().strip() != "y":
@@ -195,7 +209,14 @@ def monitor_workflows(config: dict[str, typing.Any], tag: str, workflow_time: st
       table = generate_table(workflow_info, token)
       live_table.update(rich.align.Align.center(table), refresh=True)
       if ghlib.workflows_complete(workflow_info, token):
-        sys.exit(0)
+        table = generate_table(workflow_info, token)
+        live_layout = Layout()
+        live_layout.split_column(Layout(name="upper"), Layout(name="lower"))
+        live_layout['upper'].ratio = 1
+        live_layout['upper'].update(table)
+        live_layout['lower'].update("All workflows completed")
+        live_table.update(live_layout, refresh=True)
+        return
       time.sleep(30)
 
 
@@ -203,7 +224,7 @@ def generate_table(workflow_info: dict[str, list[str]], token: str) -> rich.tabl
   """
   Generate a rich table with workflow information
   :param workflow_info: dictionary with workflow information
-  :param token: github token
+  :param token: GitHub token
   :return: a rich table with workflow information
   """
   table = Table(title="Workflow Status")
@@ -219,36 +240,74 @@ def generate_table(workflow_info: dict[str, list[str]], token: str) -> rich.tabl
       if status == {}:
         table.add_row(repo, None, None, None, None)
         continue
+      if status['status'] in ['success', 'completed']:
+        status_text = Text(status['status'], style="bold green")
+      elif status['status'] in ['cancelled', 'failure', 'action_required', 'timed_out']:
+        status_text = Text(status['status'], style="blink red")
+      else:
+        status_text = Text(status['status'], style="dim green")
+      if status['job_status'] in ['success', 'completed']:
+        job_text = Text(status['status'], style="bold green")
+      elif status['job_status'] in ['cancelled', 'failure', 'action_required', 'timed_out']:
+        job_text = Text(status['job_status'], style="blink red")
+      else:
+        job_text = Text(status['job_status'], style="dim green")
+
+      status_url = Text(status['url'], style=f"link {status['url']} blue")
       table.add_row(repo,
-                    status['url'],
                     f"{status['workflow_id']}",
-                    status['status'],
+                    status_url,
+                    status_text,
                     status['job_name'],
-                    status['job_status'])
+                    job_text)
   return table
 
 
 @click.command(help="Tag repos using settings from config file")
 @click.option("--verify", default=True, help="Verify that images were generated and published")
+@click.option("--publish", default=False, help="Publish helm chart")
 @click.pass_obj
-def tag(config: dict[str, typing.Any], verify: bool) -> None:
+@click.pass_context
+def tag(ctx: click.Context, config: dict[str, typing.Any], verify: bool, publish: bool) -> None:
   """
   Tag repos
+  :param ctx: click.Context with information about invocation
   :param config: dictionary with configuration parameters
   :param verify: bool indicating whether to verify generation of containers
+  :param publish: bool indicating whether to publish chart
   :return:
   """
-  token = get_token()
-  repo_configs = get_config(config['repo_configs'])
+  if 'token' not in ctx.obj:
+    token = get_token()
+    ctx.obj['token'] = token
+  else:
+    token = ctx.obj['token']
+  repo_configs = config['repo_configs']
   if not check_repos(repo_configs, token):
     error("Can't verify that all repos and branches exist")
-  tag_repos(repo_configs, token)
+  tag = tag_repos(repo_configs, token)
   if not verify:
     user = input("Verify container creation? [y/N]")
     if user.lower().strip() != 'y':
       sys.exit(0)
-  monitor_workflows(repo_configs, token)
-  verify_containers(config)
+  workflow_time = datetime.datetime.utcnow()
+  # workflow_time = datetime.datetime(year=2022, month=7, day=25, hour=20, minute=17, second=37).isoformat()
+  # tag = "20220725-2022-stable"
+
+  ctx.obj['config'] = repo_configs
+  ctx.invoke(monitor_workflows, tag=tag, workflow_time=workflow_time)
+  ctx.obj['config'] = config
+  ctx.invoke(verify_containers, tag=tag)
+  if publish:
+    chart_version = input("Chart version to publish? ")
+    user = input(f"Publish chart {chart_version} [y/N]? ")
+    if user.lower().strip() != 'y':
+      Console().print("Exiting since no chart version given")
+      sys.exit(0)
+    ctx.invoke(release, tag=tag, chart_version=chart_version)
+    Console().print("Release tagged and published")
+  else:
+    Console().print("Release tagged")
   sys.exit(0)
 
 
@@ -258,7 +317,6 @@ def tag(config: dict[str, typing.Any], verify: bool) -> None:
 def verify_containers(config: dict[str, typing.Any], tag: str) -> None:
   """
   Tag repos
-
   :param config: dictionary with configuration parameters
   :param tag: container tag to check
   :return: None
@@ -267,11 +325,14 @@ def verify_containers(config: dict[str, typing.Any], tag: str) -> None:
     error("Must specify a valid tag")
 
   repo_configs = config['repo_configs']
-  Console().print("Checking for docker containers:")
+  console = Console()
+  console.print("\nChecking for docker containers:")
   registry_repos = [repo for repo in repo_configs if repo.container_registry != ""]
   for repo in track(registry_repos, description="Checking.."):
     if not find_container(repo, tag):
-      error(f"Can't find container in {repo.container_repo} tagged as {tag} for {repo.name} ")
+      print(dir(repo))
+      error(f"Can't find container in {repo.container_repo} tagged as {tag} for {repo.name}")
+  console.print("All containers verified successfully")
 
 
 def find_container(repo: RepoInfo, tag) -> bool:
@@ -289,8 +350,77 @@ def find_container(repo: RepoInfo, tag) -> bool:
 
 
 @click.command(help="Generate and publish chart")
-def release() -> None:
-  pass
+@click.option("--tag", type=str, default="", required=True, prompt=True)
+@click.option("--chart-version", type=str, default="", required=True, prompt=True)
+@click.option("--verify", default=True, help="Verify that images were generated and published")
+@click.pass_obj
+@click.pass_context
+def release(ctx: click.Context, config: dict[str, typing.Any], tag: str, chart_version: str, verify: bool) -> None:
+  """
+  Tag repos
+  :param ctx: click.Context with information about invocation
+  :param config: dictionary with configuration parameters
+  :param tag: tag to use for images
+  :param chart_version: version string to use for released chart
+  :param verify: bool indicating whether to verify generation of containers
+  :return: None
+  """
+  if 'token' not in ctx.obj:
+    token = get_token()
+    ctx.obj['token'] = token
+  else:
+    token = ctx.obj['token']
+  if not ghlib.valid_gh_token(token):
+    error("Must provide a valid github token for authentication to get workflow information")
+  if verify:
+    ctx.obj['config'] = config
+    ctx.invoke(verify_containers, tag=tag)
+  temp_dir = ""
+  try:
+    temp_dir = tempfile.mkdtemp()
+  except IOError as err:
+    error(f"Can't create temporary directory in order to publish chart: {err}")
+
+  orig_dir = ""
+  try:
+    orig_dir = os.getcwd()
+    os.chdir(temp_dir)
+    print(f"Checking out in {temp_dir}")
+    console = Console()
+    servicex_repo = git.checkout_repo("ssh://git@github.com/ssl-hep/ServiceX.git", f"{temp_dir}/ServiceX", console)
+    if servicex_repo is None:
+      error("Can't checkout ServiceX repo")
+    else:
+      service_repo_dir = pathlib.Path(servicex_repo.workdir)
+    if not git.checkout_branch(servicex_repo, "develop"):
+      error("Can't checkout develop branch from ServiceX repo")
+    util.replace_appver(service_repo_dir / "servicex" / "Chart.yaml", tag, chart_version)
+    util.replace_tags(service_repo_dir / "servicex" / "values.yaml", tag)
+    git.add_file(servicex_repo, "servicex/Chart.yaml")
+    git.add_file(servicex_repo, "servicex/values.yaml")
+    git.commit(servicex_repo)
+    chart_repo = git.checkout_repo("ssh://git@github.com/ssl-hep/ssl-helm-charts.git", f"{temp_dir}/ssl-helm-charts", console)
+    if chart_repo is None:
+      error("Can't checkout ssl-helm-charts repo")
+    else:
+      chart_repo_dir = pathlib.Path(chart_repo.workdir)
+    if not git.checkout_branch(chart_repo, "gh-pages"):
+      error("Can't checkout gh-pages branch from ssl-helm-charts repo")
+    util.generate_helm_package(service_repo_dir, chart_repo_dir)
+    git.add_file(chart_repo, "index.yaml")
+    git.add_file(chart_repo, f"servicex-{chart_version}.tgz")
+    git.commit(chart_repo)
+    if not git.push(servicex_repo):
+      error("Can't push changes to ServiceX repo")
+    if not git.push(chart_repo):
+      error("Can't push changes to ssl-helm-charts repo")
+
+  except IOError:
+    pass
+  finally:
+    if orig_dir is not None:
+      os.chdir(orig_dir)
+    #shutil.rmtree(temp_dir)
 
 
 def setup_logging(debug: bool) -> None:
@@ -331,8 +461,10 @@ def entry(ctx: click.Context, config: str, debug: bool) -> None:
   """
   setup_logging(debug)
   repo_configs = get_config(config)
+  token = get_token()
   ctx.obj = {'config': config,
-             'repo_configs': repo_configs}
+             'repo_configs': repo_configs,
+             'token': token}
 
   # tag_repos(repo_configs, token)
   # verify_workflows(repo_configs, token)
@@ -343,6 +475,7 @@ entry.add_command(tag)
 entry.add_command(verify_containers)
 entry.add_command(monitor_workflows)
 entry.add_command(release)
+# entry.add_command(publish)
 
 if __name__ == "__main__":
   entry()

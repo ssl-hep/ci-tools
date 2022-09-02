@@ -69,10 +69,10 @@ mv servicex/values.new.yaml servicex/values.yaml
 git add servicex/values.yaml
 
 git commit -m "Deploy version $1"
-git push origin develop
+#git push origin develop
 
 git tag -a v$1 -m "Helm chart version $2"
-git push origin v$1
+#git push origin v$1
 
 # Publish the chart
 helm package servicex
@@ -87,6 +87,6 @@ git checkout gh-pages
 git add index.yaml
 git add servicex-$2.tgz
 git commit -m "Release $1"
-git push origin gh-pages
+#git push origin gh-pages
 popd || exit 0
 echo "Version $1 has been released!"
