@@ -1,0 +1,19 @@
+name: Check type information
+
+on: pull_request
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: Checks
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.x
+    - name: Install pipenv
+      run: |
+        pip install pipenv
+        pipenv install --dev
+    - name: Run tests
+      run: pipenv run mypy release-tool.py --ignore-missing-imports
