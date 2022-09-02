@@ -63,7 +63,7 @@ mv servicex/Chart.new.yaml servicex/Chart.yaml
 git add servicex/Chart.yaml
 
 # Point all images in values.yaml to the new deployment
-sed -E -e "s/  tag:\s*.+$/  tag: $1/" -e "s/  defaultTransformerTag:\s*.+$/  defaultTransformerTag: $1/" servicex/values.yaml > servicex/values.new.yaml
+sed -E -e "s/  tag:\s*[[:digit:]]{8}-[[:digit:]]{4}-stable.*$/  tag: $1/" -e "s/  defaultTransformerTag:\s*.+$/  defaultTransformerTag: $1/" servicex/values.yaml > servicex/values.new.yaml
 
 mv servicex/values.new.yaml servicex/values.yaml
 git add servicex/values.yaml
@@ -75,6 +75,7 @@ git tag -a v$1 -m "Helm chart version $2"
 #git push origin v$1
 
 # Publish the chart
+helm dependency update servicex
 helm package servicex
 mv servicex-$2.tgz ../ssl-helm-charts
 
