@@ -16,4 +16,4 @@ jobs:
         pip install pipenv
         pipenv install --dev
     - name: Run tests
-      run: pipenv run mypy release-tool.py --ignore-missing-imports
+      run: pipenv run mypy release_tool.py --ignore-missing-imports

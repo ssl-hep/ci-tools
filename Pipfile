@@ -19,7 +19,6 @@ mypy = "0.960"
 types-toml = "*"
 types-requests = "*"
 types-PyYAML = "*"
-types-pygit2 = "*"
 
 [requires]
 python_version = "3.10"
