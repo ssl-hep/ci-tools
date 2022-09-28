@@ -250,3 +250,15 @@ def workflows_complete(workflow_info: dict[str, list[str]], token: str) -> bool:
           print(f"workflow: {workflow_url} default not completed")
           completed = False
   return completed
+
+
+def create_release_pr(repo: str, base_branch: str, feature_branch: str, release: str, token: str) -> bool:
+  """
+  Create a PR for the release of code
+  :param repo: 
+  :param base_branch:
+  :param feature_branch:
+  :param release:
+  :param token:
+  :return:
+  """
