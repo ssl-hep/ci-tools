@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import datetime
 import os
-import shutil
 import sys
 import pathlib
 import logging
@@ -291,8 +290,6 @@ def tag(ctx: click.Context, config: dict[str, typing.Any], verify: bool, publish
     if user.lower().strip() != 'y':
       sys.exit(0)
   workflow_time = datetime.datetime.utcnow()
-  # workflow_time = datetime.datetime(year=2022, month=7, day=25, hour=20, minute=17, second=37).isoformat()
-  # tag = "20220725-2022-stable"
 
   ctx.obj['config'] = repo_configs
   ctx.invoke(monitor_workflows, tag=tag, workflow_time=workflow_time)
@@ -466,16 +463,11 @@ def entry(ctx: click.Context, config: str, debug: bool) -> None:
              'repo_configs': repo_configs,
              'token': token}
 
-  # tag_repos(repo_configs, token)
-  # verify_workflows(repo_configs, token)
-  # verify_containers(config)
-
 
 entry.add_command(tag)
 entry.add_command(verify_containers)
 entry.add_command(monitor_workflows)
 entry.add_command(release)
-# entry.add_command(publish)
 
 if __name__ == "__main__":
   entry()
